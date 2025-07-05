@@ -1,6 +1,6 @@
 # Backend Setup
 
-## .evn
+## .env
 
 ```
 
