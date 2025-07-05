@@ -1,0 +1,11 @@
+import {IsNotEmpty, IsEmail} from 'class-validator';
+
+
+export class LoginUserDTO {
+  @IsNotEmpty({ message: 'Email không được để trống' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  email: string;
+
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
+  password: string;
+}
