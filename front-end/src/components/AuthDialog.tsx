@@ -18,9 +18,10 @@ interface AuthDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: 'login' | 'register';
   onModeChange: (mode: 'login' | 'register') => void;
+  onLogin?: () => void; // Callback khi đăng nhập thành công
 }
 
-const AuthDialog = ({ open, onOpenChange, mode, onModeChange }: AuthDialogProps) => {
+const AuthDialog = ({ open, onOpenChange, mode, onModeChange, onLogin }: AuthDialogProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -31,13 +32,29 @@ const AuthDialog = ({ open, onOpenChange, mode, onModeChange }: AuthDialogProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication logic with Supabase
-    console.log('Form submitted:', formData);
+    
+    // Giả lập xác thực đơn giản
+    if (formData.email && formData.password) {
+      // TODO: Thay thế bằng logic xác thực thật với Supabase
+      console.log('Đăng nhập thành công:', formData);
+      onLogin?.(); // Gọi callback để cập nhật trạng thái đăng nhập
+      onOpenChange(false); // Đóng dialog
+      
+      // Reset form
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        fullName: ''
+      });
+    }
   };
 
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     // TODO: Implement social authentication with Supabase
-    console.log(`Login with ${provider}`);
+    console.log(`Đăng nhập với ${provider} thành công`);
+    onLogin?.(); // Gọi callback để cập nhật trạng thái đăng nhập
+    onOpenChange(false); // Đóng dialog
   };
 
   return (
