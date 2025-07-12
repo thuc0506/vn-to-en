@@ -1,4 +1,4 @@
-import { Body, Post, Controller, UsePipes, Get, Req,Query, Res, UseGuards, HttpException, HttpStatus, Put, Param, ValidationPipe } from '@nestjs/common';
+import { Body, Post, Controller, UsePipes, Get, Req, Query, Res, UseGuards, HttpException, HttpStatus, Put, Param, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RegisterUserDTO } from './dto/register-user.dto';
 import { AuthService } from './auth.service';
@@ -31,21 +31,27 @@ export class AuthController {
     }
 
     @Post('login')
-    //Đánh dấu phương thức login để xử lý các yêu cầu POST đến route /auth/login.
-    //Sử dụng ValidationPipe để tự động kiểm tra và xác thực dữ liệu đầu vào
     @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-    login(@Body() loginUserDTO: LoginUserDTO): Promise<any> {
+    login(
+        @Body() loginUserDTO: LoginUserDTO,
+        @Res({ passthrough: true }) res: Response, // ✅ thêm @Res vào đây
+    ): Promise<any> {
         console.log("login api");
         console.log(loginUserDTO);
-        return this.authService.login(loginUserDTO)
+        return this.authService.login(loginUserDTO, res);
     }
+
 
 
     @Post('refresh-token')
-    refreshToken(@Body() { refresh_token }): Promise<any> {
-        console.log('refresh token api');
-        return this.authService.refreshToken(refresh_token)
+    refreshToken(
+        @Body() { refresh_token },
+        @Res({ passthrough: true }) res: Response,  // ✅ thêm vào đây
+    ): Promise<any> {
+        console.log('🔄 API Refresh token đang hoạt động...');
+        return this.authService.refreshToken(refresh_token, res);
     }
+
 
 
     // Đường dẫn để bắt đầu quá trình đăng nhập với Google.
@@ -88,44 +94,44 @@ export class AuthController {
     }
 
 
-    
 
-    @Post('logout')
-    async logout(@Body() { refresh_token }): Promise<any> {
-        console.log('logout api');
 
-        if (refresh_token) {
-            await this.authService.logout(refresh_token);
-        }
+   @Post('logout')
+async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+): Promise<any> {
+    console.log('logout api');
+    const refresh_token = req.cookies['refresh_token']; // ✅ Lấy từ cookie
 
-        return {
-            message: 'Đăng xuất thành công'
-        };
+    if (refresh_token) {
+        await this.authService.logout(refresh_token);
     }
 
-    
+    // ✅ Xóa cookie phía client
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
 
-   
+    return {
+        message: 'Đăng xuất thành công'
+    };
+}
 
-    // ✅ Test GET cache
-  @Get()
-  async getCache(@Query('key') key: string) {
-    const value = await this.authService.getCache(key);
-    return { key, value };
-  }
 
-  // ✅ Test SET cache
-  @Post()
-  async setCache(@Body() body: { key: string; value: any; ttl?: number }) {
-    const { key, value, ttl } = body;
-    await this.authService.setCache(key, value, ttl);
-    return { message: 'Cache set successfully', key, value, ttl };
-  }
+    @Get('me')
+    async getMe(@Req() req: Request) {
+        const token = req.cookies['access_token']; // Đọc token từ cookie
+        return this.authService.getMe(token);
+    }
 
- @Get('cache-user/:email')
-  async getUserCache(@Param('email') email: string): Promise<User> {
-    return this.authService.getUserWithCache(email);
-  }
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus, Injectable, Inject } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Inject, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -35,13 +36,15 @@ export class AuthService {
         private jwtService: JwtService,
         private configService: ConfigService,
 
+
         @Inject(CACHE_MANAGER) private cacheManager: Cache, // Sử dụng cache manager từ NestJS
 
-    ) {console.log(
-  'CacheManager Type:',
-  (this.cacheManager as any).store?.constructor?.name,
-);
-}
+    ) {
+        console.log(
+            'CacheManager Type:',
+            (this.cacheManager as any).store?.constructor?.name,
+        );
+    }
 
     async generateAvatarByName(name: string): Promise<string> {
         const canvasSize = 200;
@@ -100,9 +103,13 @@ export class AuthService {
         });
     }
 
-    // Phương thức đăng nhập với Redis cache
-    // Phương thức đăng nhập với Redis cache
-    async login(loginUserDTO: LoginUserDTO): Promise<User> {
+
+
+    // Phương thức đăng nhập với Redis cache + HttpOnly Cookie
+    async login(
+        loginUserDTO: LoginUserDTO,
+        @Res({ passthrough: true }) res: Response // ✅ Phải thêm @Res
+    ): Promise<{ user: User }> {
         const { email, password } = loginUserDTO;
 
         console.log(`🚀 Attempting login for email: ${email}`);
@@ -114,57 +121,92 @@ export class AuthService {
         if (attempts >= 5) {
             console.log(`❌ Blocking login for ${email} - too many attempts`);
             throw new HttpException(
-                'Quá nhiều lần đăng nhập sai. Vui lòng thử lại sau 15 phút.',
+                {
+                    message: 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.',
+                    remainingAttempts: 0,
+                },
                 HttpStatus.TOO_MANY_REQUESTS,
             );
         }
 
-        // Tìm user trong Redis trước
-        const cacheKey = `user:${email}`;
-        let user = await this.cacheManager.get<User>(cacheKey);
-        console.log(`🔍 Checking user in Redis cache (Key: ${cacheKey}):`, user ? 'Found' : 'Not Found');
 
-        // Nếu không có trong Redis, tìm trong database
-        if (!user) {
-            user = await this.userRepository.findOne({
-                where: { email },
-                relations: ['role'],
-            });
-
-            // Nếu tìm thấy, lưu vào Redis
-            if (user) {
-                await this.cacheManager.set(cacheKey, user, 300); // TTL 5 phút
-                console.log(`✅ Saved user to Redis cache (Key: ${cacheKey}) with TTL 300s`);
-            }
-        }
+        // Tìm user trong Redis cache
+        const user = await this.userRepository.findOne({
+            where: { email },
+            relations: ['role'],
+        });
 
         if (!user) {
             console.log(`⚠️ User not found in DB for email: ${email}`);
-            await this.cacheManager.set(attemptKey, attempts + 1, 900); // TTL 15 phút
+            await this.cacheManager.set(attemptKey, attempts + 1,{ ttl: 900 } as any);
             console.log(`⏫ Increased login attempt (Key: ${attemptKey}) to ${attempts + 1} with TTL 900s`);
-            throw new HttpException('Email không tồn tại', HttpStatus.UNAUTHORIZED);
+            // Ném ngoại lệ nếu không tìm thấy user
+            // Thông báo lỗi với số lần thử còn lại
+            throw new HttpException(
+                {
+                    message: 'Email không tồn tại',
+                    remainingAttempts: 5 - (attempts + 1),
+                },
+                HttpStatus.UNAUTHORIZED,
+            );
         }
+
 
         // Kiểm tra mật khẩu
         const checkPass = bcrypt.compareSync(password, user.password);
         if (!checkPass) {
             console.log(`❌ Wrong password for email: ${email}`);
-            await this.cacheManager.set(attemptKey, attempts + 1, 900); // TTL 15 phút
+            await this.cacheManager.set(attemptKey, attempts + 1,  { ttl: 900 } as any);
             console.log(`⏫ Increased login attempt (Key: ${attemptKey}) to ${attempts + 1} with TTL 900s`);
-            throw new HttpException('Mật khẩu không đúng', HttpStatus.UNAUTHORIZED);
+            // Ném ngoại lệ nếu mật khẩu không đúng
+            // Thông báo lỗi với số lần thử còn lại
+            throw new HttpException(
+                {
+                    message: 'Mật khẩu không đúng',
+                    remainingAttempts: 5 - (attempts + 1),
+                },
+                HttpStatus.UNAUTHORIZED,
+            );
         }
 
-        // Xóa số lần thử sai nếu đăng nhập thành công
+        // Xóa số lần thử sai nếu login thành công
         await this.cacheManager.del(attemptKey);
         console.log(`✅ Login successful for email: ${email}. Deleted login attempts key: ${attemptKey}`);
 
-        return user;
+        // ✅ Sinh token
+        const roleIds = user.role ? [user.role.id] : [];
+        const { access_token, refresh_token } = await this.generateToken({
+            id: user.id,
+            email: user.email,
+            roleIds,
+        });
+
+        // ✅ Set HttpOnly cookies
+        res.cookie('access_token', access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000, // 15 phút
+        });
+
+        res.cookie('refresh_token', refresh_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+        });
+
+        // ✅ Trả về user thôi, KHÔNG trả token
+        return { user };
     }
 
 
     //Phương thức tạo token
     async generateToken(payload: { id: number; email: string; roleIds: number[] }) {
-        const access_token = await this.jwtService.signAsync(payload);
+        // Tạo access token và refresh token từ payload
+        const access_token = await this.jwtService.signAsync(payload, {
+            expiresIn: this.configService.get<string>('EXP_IN_ACCESS_TOKEN'),
+        });
         const refresh_token = await this.jwtService.signAsync(payload, {
             secret: this.configService.get<string>('SECRET'),
             expiresIn: this.configService.get<string>('EXP_IN_REFRESH_TOKEN'),
@@ -172,7 +214,7 @@ export class AuthService {
 
         // Lưu refresh token vào Redis
         const tokenKey = `refresh_token:${refresh_token}`;
-        await this.cacheManager.set(tokenKey, payload, 7 * 24 * 60 * 60); // 7 ngày
+        await this.cacheManager.set(tokenKey, payload, { ttl: 7 * 24 * 60 * 60 } as any);// 7 ngày
 
         // Cập nhật refresh token trong database
         await this.userRepository.update(
@@ -188,50 +230,62 @@ export class AuthService {
     // Nếu refresh token hợp lệ, tạo một access token mới và trả về nó
     // Nếu refresh token không hợp lệ, ném ra một ngoại lệ với thông báo lỗi
     // Phương thức làm mới token
-    async refreshToken(refresh_token: string): Promise<any> {
+    async refreshToken(
+        refresh_token: string,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<{ message: string }> {
         try {
-            // Kiểm tra token trong blacklist
             const blacklistKey = `blacklist:${refresh_token}`;
             const isBlacklisted = await this.cacheManager.get(blacklistKey);
-
             if (isBlacklisted) {
                 throw new HttpException('Token đã bị vô hiệu hóa', HttpStatus.UNAUTHORIZED);
             }
 
-            // Kiểm tra token trong Redis
+            const verifiedPayload = await this.jwtService.verifyAsync(refresh_token, {
+                secret: this.configService.get<string>('SECRET'),
+            });
+
             const tokenKey = `refresh_token:${refresh_token}`;
             const cachedPayload = await this.cacheManager.get(tokenKey);
 
-            if (cachedPayload) {
-                // Verify token
-                const verifiedPayload = await this.jwtService.verifyAsync(refresh_token, {
-                    secret: this.configService.get<string>('SECRET')
+            if (!cachedPayload) {
+                // Không có trong Redis => kiểm tra DB
+                const user = await this.userRepository.findOne({
+                    where: { email: verifiedPayload.email, refresh_token },
+                    relations: ['role'],
                 });
 
-                return this.generateToken(verifiedPayload);
+                if (!user) {
+                    throw new HttpException('Refresh token không hợp lệ', HttpStatus.BAD_REQUEST);
+                }
             }
 
-            // Nếu không có trong Redis, kiểm tra database
-            const verifiedPayload = await this.jwtService.verifyAsync(refresh_token, {
-                secret: this.configService.get<string>('SECRET')
+            // ✅ Tạo token mới
+            const { exp, iat, ...cleanPayload } = verifiedPayload;
+            const { access_token, refresh_token: new_refresh_token } = await this.generateToken(cleanPayload);
+
+            // ✅ Set lại HttpOnly Cookie mới
+            res.cookie('access_token', access_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 15 * 60 * 1000, // 15 phút
             });
 
-            const user = await this.userRepository.findOne({
-                where: { email: verifiedPayload.email, refresh_token },
-                relations: ['role'],
+            res.cookie('refresh_token', new_refresh_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
             });
 
-            if (!user) {
-                throw new HttpException('Refresh token không hợp lệ', HttpStatus.BAD_REQUEST);
-            }
-
-            const roleIds = user.role ? [user.role.id] : [];
-            return this.generateToken({ id: user.id, email: user.email, roleIds });
-
+            return { message: 'Token refreshed successfully' };
         } catch (error) {
             throw new HttpException('Refresh token không hợp lệ', HttpStatus.BAD_REQUEST);
         }
     }
+
+
     //Phương thức đăng nhập với Google
     // Nhận dữ liệu người dùng từ Google, kiểm tra xem người dùng đã tồn tại trong cơ sở dữ liệu chưa
     // Nếu người dùng chưa tồn tại, tạo mới người dùng với thông tin từ Google và lưu vào cơ sở dữ liệu
@@ -294,57 +348,46 @@ export class AuthService {
         return hash; // Trả về mật khẩu đã mã hóa
     }
 
-    // Phương thức logout
-    async logout(refresh_token: string): Promise<void> {
-        // Thêm token vào blacklist
-        const blacklistKey = `blacklist:${refresh_token}`;
-        await this.cacheManager.set(blacklistKey, true, 24 * 60 * 60); // 24 giờ
 
-        // Xóa token khỏi Redis
+    // Phương thức logout - KHÔNG xóa cookie trong service
+    async logout(refresh_token: string): Promise<void> {
+        const blacklistKey = `blacklist:${refresh_token}`;
+        await this.cacheManager.set(blacklistKey, true,  { ttl: 24 * 60 * 60 } as any); //24h
         const tokenKey = `refresh_token:${refresh_token}`;
         await this.cacheManager.del(tokenKey);
     }
 
-  
 
-   // ✅ Hàm get cache
- async getCache(key: string) {
-  if (!key) {
-    throw new Error('Cache key is invalid');
-  }
-  return await this.cacheManager.get(key);
-}
+    // Phương thức lấy thông tin người dùng hiện tại
+    async getMe(access_token: string): Promise<User> {
+        if (!access_token) {
+            throw new HttpException('Chưa đăng nhập', HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            const payload = await this.jwtService.verifyAsync(access_token);
+            const user = await this.userRepository.findOne({
+                where: { id: payload.id },
+                relations: ['role'],
+            });
+
+            if (!user) {
+                throw new HttpException('Người dùng không tồn tại', HttpStatus.UNAUTHORIZED);
+            }
+
+            return user;
+        } catch (error) {
+            throw new HttpException('Token không hợp lệ', HttpStatus.UNAUTHORIZED);
+        }
+    }
 
 
-  // ✅ Hàm set cache
-  async setCache(key: string, value: any, ttlSeconds = 60): Promise<void> {
-    await this.cacheManager.set(key, value, ttlSeconds);
-  }
 
 
-  
-  async getUserWithCache(email: string) {
-  const cacheKey = `user:${email}`;
-   console.log('Generated CacheKey:', cacheKey); // Thêm dòng này để debug
-  console.time('⏱️ Redis Get User');
-  let user = await this.cacheManager.get<User>(cacheKey);
-  console.timeEnd('⏱️ Redis Get User');
 
-  if (!user) {
-      console.time('⏱️ DB Query User');
-      user = await this.userRepository.findOne({
-          where: { email },
-          relations: ['role'],
-      });
-      console.timeEnd('⏱️ DB Query User');
 
-      if (user) {
-          await this.cacheManager.set(cacheKey, user, 300);
-          console.log(`✅ Saved user to Redis cache (Key: ${cacheKey}) with TTL 300s`);
-      }
-  }
 
-  return user;
-}
+
+
 
 }

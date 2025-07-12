@@ -23,6 +23,7 @@ export class AppModule {
             store: redisStore,
             host: configService.get('REDIS_HOST'),
             port: configService.get<number>('REDIS_PORT'),
+            ttl: 0,
             db: options.db,
           }),
         }),
