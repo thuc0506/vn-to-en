@@ -106,7 +106,7 @@ const Courses = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      <Navigation />
+      
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-duolingo-blue to-duolingo-green text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -250,7 +250,7 @@ const Courses = () => {
         </div>
       </section>
 
-      <Footer />
+ 
     </div>
   );
 };
