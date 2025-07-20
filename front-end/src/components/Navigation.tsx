@@ -14,53 +14,43 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AuthDialog from "./AuthDialog";
 
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/lib/store';
-import { logout, apiLogout } from '@/lib/slices/authSlice';
-
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  
+  // Mock user state để test profile menu
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const mockUser = {
+    name: "Nguyễn Văn Nam",
+    email: "nam.nguyen@example.com",
+    avatar: "", // để trống sẽ hiển thị fallback
+    level: "Intermediate",
+    progress: 75
+  };
 
-  // Sử dụng useDispatch để lấy hàm dispatch từ Redux store
-  const dispatch = useDispatch<AppDispatch>();
-
-  // Lấy thông tin người dùng từ Redux store
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  // Kiểm tra xem người dùng đã đăng nhập hay chưa
-  const isLoggedIn = Boolean(user);
-
-
-  // Hàm xử lý khi người dùng nhấn nút đăng nhập hoặc đăng ký
   const handleAuthClick = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setShowAuthDialog(true);
   };
 
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setShowAuthDialog(false);
+  };
 
-  // Hàm xử lý đăng xuất
- const handleLogout = async () => {
-  try {
-    await dispatch(apiLogout()).unwrap();  // Gọi API backend để clear cookie + Redis
-    dispatch(logout());                    // Clear Redux/localStorage FE
-  } catch (err) {
-    console.error("Logout failed", err);
-  }
-};
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
 
-
-  // Component hiển thị menu người dùng
   const ProfileMenu = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-          
+            <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
             <AvatarFallback className="bg-duolingo-blue text-white font-semibold">
-             {user?.username?.split(" ").map((n: string) => n[0]).join("")}
-
+              {mockUser.name.split(" ").map(n => n[0]).join("")}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -70,19 +60,18 @@ const Navigation = () => {
           <div className="flex flex-col space-y-2">
             <div className="flex items-center space-x-3">
               <Avatar className="h-12 w-12">
-               
+                <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
                 <AvatarFallback className="bg-duolingo-green text-white font-semibold text-lg">
-                  {user?.username?.split(" ").map((n: string) => n[0]).join("")}
-
+                  {mockUser.name.split(" ").map(n => n[0]).join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <p className="text-base font-bold text-gray-900">{user?.username}</p>
-                <p className="text-sm text-gray-600">{user?.email}</p>
+                <p className="text-base font-bold text-gray-900">{mockUser.name}</p>
+                <p className="text-sm text-gray-600">{mockUser.email}</p>
                 <div className="flex items-center space-x-2 mt-1">
                   <Award className="h-4 w-4 text-duolingo-green" />
-                  <span className="text-xs font-semibold text-duolingo-green">{user?.level}</span>
-                  <span className="text-xs text-gray-500">• {user?.progress}%</span>
+                  <span className="text-xs font-semibold text-duolingo-green">{mockUser.level}</span>
+                  <span className="text-xs text-gray-500">• {mockUser.progress}%</span>
                 </div>
               </div>
             </div>
@@ -135,7 +124,7 @@ const Navigation = () => {
               <Link to="/" className="text-gray-700 hover:text-duolingo-green transition-colors font-nunito font-semibold">
                 Trang chủ
               </Link>
-
+              
               {/* Dropdown Menu for Khóa học */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -144,30 +133,47 @@ const Navigation = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-white" align="start">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <BookOpen className="mr-3 h-4 w-4 text-duolingo-blue" />
-                    <span>Khóa học cơ bản</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses/basic" className="flex items-center">
+                      <BookOpen className="mr-3 h-4 w-4 text-duolingo-blue" />
+                      <span>Khóa học cơ bản</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <BookOpen className="mr-3 h-4 w-4 text-duolingo-green" />
-                    <span>Khóa học nâng cao</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses/advanced" className="flex items-center">
+                      <BookOpen className="mr-3 h-4 w-4 text-duolingo-green" />
+                      <span>Khóa học nâng cao</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Award className="mr-3 h-4 w-4 text-yellow-500" />
-                    <span>Khóa luyện thi IELTS</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses/ielts" className="flex items-center">
+                      <Award className="mr-3 h-4 w-4 text-yellow-500" />
+                      <span>Khóa luyện thi IELTS</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Award className="mr-3 h-4 w-4 text-blue-500" />
-                    <span>Khóa luyện thi TOEIC</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses/toeic" className="flex items-center">
+                      <Award className="mr-3 h-4 w-4 text-blue-500" />
+                      <span>Khóa luyện thi TOEIC</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer">
-                    <User className="mr-3 h-4 w-4 text-purple-500" />
-                    <span>Khóa học 1:1</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses/one-on-one" className="flex items-center">
+                      <User className="mr-3 h-4 w-4 text-purple-500" />
+                      <span>Khóa học 1:1</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link to="/courses" className="flex items-center font-semibold">
+                      <BookOpen className="mr-3 h-4 w-4 text-gray-700" />
+                      <span>Xem tất cả khóa học</span>
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
+              
               <Link to="/about-us" className="text-gray-700 hover:text-duolingo-green transition-colors font-nunito font-semibold">
                 Về chúng tôi
               </Link>
@@ -182,14 +188,14 @@ const Navigation = () => {
                 <ProfileMenu />
               ) : (
                 <>
-                  <Button
-                    variant="outline"
+                  <Button 
+                    variant="outline" 
                     onClick={() => handleAuthClick('login')}
                     className="border-2 border-duolingo-blue text-duolingo-blue hover:bg-duolingo-blue hover:text-white font-nunito font-bold rounded-xl px-6"
                   >
                     Đăng nhập
                   </Button>
-                  <Button
+                  <Button 
                     onClick={() => handleAuthClick('register')}
                     className="bg-duolingo-green hover:bg-duolingo-green-dark text-white font-nunito font-bold rounded-xl px-6"
                   >
@@ -214,7 +220,7 @@ const Navigation = () => {
               <Link to="/" className="block text-gray-700 hover:text-duolingo-green font-nunito font-semibold py-2">
                 Trang chủ
               </Link>
-              <Link to="#" className="block text-gray-700 hover:text-duolingo-green font-nunito font-semibold py-2">
+              <Link to="/courses" className="block text-gray-700 hover:text-duolingo-green font-nunito font-semibold py-2">
                 Khóa học
               </Link>
               <Link to="/about-us" className="block text-gray-700 hover:text-duolingo-green font-nunito font-semibold py-2">
@@ -223,20 +229,63 @@ const Navigation = () => {
               <Link to="/contact" className="block text-gray-700 hover:text-duolingo-green font-nunito font-semibold py-2">
                 Liên hệ
               </Link>
-
+              
               {isLoggedIn ? (
-                // Hiển thị Profile Menu nếu đã đăng nhập
-                <ProfileMenu />
+                <div className="pt-4 border-t">
+                  <div className="flex items-center space-x-3 pb-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
+                      <AvatarFallback className="bg-duolingo-green text-white font-semibold text-lg">
+                        {mockUser.name.split(" ").map(n => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <p className="text-base font-bold text-gray-900">{mockUser.name}</p>
+                      <p className="text-sm text-gray-600">{mockUser.email}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Award className="h-4 w-4 text-duolingo-green" />
+                        <span className="text-xs font-semibold text-duolingo-green">{mockUser.level}</span>
+                        <span className="text-xs text-gray-500">• {mockUser.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Button variant="ghost" className="w-full justify-start font-nunito">
+                      <User className="mr-3 h-4 w-4" />
+                      Hồ sơ cá nhân
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start font-nunito">
+                      <BookmarkIcon className="mr-3 h-4 w-4" />
+                      Bài học đã lưu
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start font-nunito">
+                      <Award className="mr-3 h-4 w-4" />
+                      Thành tích
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start font-nunito">
+                      <Settings className="mr-3 h-4 w-4" />
+                      Cài đặt
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start font-nunito text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-3 h-4 w-4" />
+                      Đăng xuất
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col space-y-3 pt-4">
-                  <Button
-                    variant="outline"
+                  <Button 
+                    variant="outline" 
                     onClick={() => handleAuthClick('login')}
                     className="border-2 border-duolingo-blue text-duolingo-blue hover:bg-duolingo-blue hover:text-white font-nunito font-bold rounded-xl"
                   >
                     Đăng nhập
                   </Button>
-                  <Button
+                  <Button 
                     onClick={() => handleAuthClick('register')}
                     className="bg-duolingo-green hover:bg-duolingo-green-dark text-white font-nunito font-bold rounded-xl"
                   >
@@ -249,12 +298,12 @@ const Navigation = () => {
         </div>
       </nav>
 
-      <AuthDialog
+      <AuthDialog 
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
         mode={authMode}
         onModeChange={setAuthMode}
-        
+        onLogin={handleLogin}
       />
     </>
   );
