@@ -284,7 +284,7 @@ const CourseLessons = () => {
   if (!courseData) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+      
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-2xl font-bold text-center">Khóa học không tồn tại</h1>
         </div>
@@ -317,8 +317,7 @@ const CourseLessons = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
+    
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -422,7 +421,7 @@ const CourseLessons = () => {
         </div>
       </div>
 
-      <Footer />
+    
     </div>
   );
 };

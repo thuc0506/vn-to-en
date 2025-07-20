@@ -5,7 +5,7 @@ import { Users, Target, Award, BookOpen } from "lucide-react";
 const AboutUs = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+    
       
       <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
@@ -105,7 +105,7 @@ const AboutUs = () => {
           </div>
         </div>
       </div>
-      <Footer />
+    
     </div>
   );
 };
