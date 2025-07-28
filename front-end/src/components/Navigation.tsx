@@ -144,19 +144,19 @@ const Navigation = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-white" align="start">
                   <DropdownMenuItem className="cursor-pointer" asChild>
-                    <Link to="/courses/basic" className="flex items-center">
+                    <Link to="/courses/video" className="flex items-center">
                       <Film className="mr-3 h-4 w-4 text-duolingo-blue" />
                       <span>Luyện nghe qua Video</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer" asChild>
-                    <Link to="/courses/advanced" className="flex items-center">
+                    <Link to="/courses/audio" className="flex items-center">
                       <Headphones className="mr-3 h-4 w-4 text-duolingo-green" />
                       <span>Luyện nghe qua Audio</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer" asChild>
-                    <Link to="/courses/ielts" className="flex items-center">
+                    <Link to="/courses/translate" className="flex items-center">
                       <Languages className="mr-3 h-4 w-4 text-yellow-500" />
                       <span>Luyện dịch Anh - Việt</span>
                     </Link>

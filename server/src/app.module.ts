@@ -1,6 +1,9 @@
 import { CacheModule, CacheInterceptor } from '@nestjs/cache-manager';
 import { DynamicModule, Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
+import { TopicModule } from './modules/topic/topic.module';
+import { SectionModule } from './modules/section/section.module';
+import { LessonModule } from './modules/lesson/lesson.module';
 import { dataSourceOptions } from 'db/data-source';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -28,6 +31,9 @@ export class AppModule {
           }),
         }),
         AuthModule,
+        TopicModule,
+        SectionModule,
+        LessonModule,
       ],
       controllers: [],
       providers: [
