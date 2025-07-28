@@ -19,6 +19,16 @@ export class TopicController {
     async getListTopic(): Promise<Topic[]>{
         return this.topicService.getListTopic();
     }
+
+    @Get('getByType/:type')
+    async getTopicByType(@Param('type') type: string): Promise<Topic[]> {
+        return this.topicService.getTopicByType(type);
+    }
+
+    @Get('getBySlug/:slug')
+    async getTopicBySlug(@Param('slug') slug: string): Promise<Topic> {
+        return this.topicService.getTopicBySlug(slug);
+    }
     
 
 }

@@ -6,10 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
-import Courses from "./pages/Courses";
-import CourseDetail from "./pages/CourseDetail";
-import CourseLessons from "./pages/CourseLessons";
+import CourseTopic from "./pages/CoursesTopic";
 import LessonDetail from "./pages/LessonDetail";
+import SectionList from "./pages/SectionList";
 import NotFound from "./pages/NotFound";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import MainLayout from "./components/layout/MainLayout";
@@ -27,11 +26,16 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/courses/:courseId" element={<CourseDetail />} />
-            <Route path="/courses/:courseId/lessons" element={<CourseLessons />} />
-            <Route path="/courses/:courseId/topics/:topicId" element={<LessonDetail />} />
-            <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonDetail />} />
+            <Route path="/courses/:courseType" element={<CourseTopic />} />
+            <Route path="/courses/:courseType/:slug" element={<SectionList />} />
+            <Route path="/courses/:courseType/:slug/:lessonSlugAndId" element={<LessonDetail />} />
+            
+
+
+
+
+            {/* <Route path="/courses/:courseId/topics/:topicId" element={<LessonDetail />} /> */}
+
 
           </Route>
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
