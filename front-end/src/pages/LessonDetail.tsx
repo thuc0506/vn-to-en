@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import useFetchLessonDetail from "../hooks/lesson/useFetchLessonDetail";
+import useDictationTrainer from "../hooks/lesson/useDictationTrainer";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,8 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
-  Star, Play, Pause, Volume2, Settings,
-  ArrowLeft, ArrowRight, RotateCcw,
+  Star, Play, ArrowLeft, ArrowRight,
 } from "lucide-react";
 
 const Lesson = () => {
@@ -17,39 +19,41 @@ const Lesson = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLDivElement>(null);
 
-
   const lessonId = lessonSlugAndId?.split(".").pop();
   const { lesson, loading, error } = useFetchLessonDetail(lessonId || "");
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [userInput, setUserInput] = useState("");
+  const playerRef = useRef<any>(null);
+
+  const {
+    currentCaption,
+    currentCaptionIndex,
+    userInput,
+    setUserInput,
+    checkAnswer,
+    nextCaption,
+    prevCaption,
+    startDictation,
+    isPaused,
+    setIsPaused
+  } = useDictationTrainer(lesson?.detail?.transcript_path ?? "", playerRef);
+
   const [showAnswer, setShowAnswer] = useState(false);
   const [currentSentence, setCurrentSentence] = useState(1);
-
-
-
-
-  const playerRef = useRef<any>(null);
   const intervalRef = useRef<any>(null);
-  const [isPaused, setIsPaused] = useState(true);
 
- 
-
-
-  // Sử dụng useEffect để đảm bảo chỉ chạy khi video và progress thay đổi
   useEffect(() => {
     if (!lesson?.detail?.url || !videoRef.current) return;
 
     const { url } = lesson.detail;
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) return;
 
     const initializePlayer = () => {
-      const videoId = new URL(url).searchParams.get("v");
-      if (!videoId || !videoRef.current) return;
-
       playerRef.current = new window.YT.Player(videoRef.current, {
         videoId,
-        height: "400",
+        height: "280",
         width: "100%",
         playerVars: {
           rel: 0,
@@ -80,7 +84,6 @@ const Lesson = () => {
         script.src = "https://www.youtube.com/iframe_api";
         document.body.appendChild(script);
       }
-
       window.onYouTubeIframeAPIReady = initializePlayer;
     };
 
@@ -93,26 +96,10 @@ const Lesson = () => {
     };
   }, [lesson]);
 
-
-
-  const togglePlayPause = () => {
-    if (playerRef.current) {
-      const state = playerRef.current.getPlayerState();
-      if (state === window.YT.PlayerState.PLAYING) {
-        playerRef.current.pauseVideo();
-      } else {
-        playerRef.current.playVideo();
-      }
-    }
-  };
-
-
-
-
   const handleCheck = () => setShowAnswer(true);
   const handleSkip = () => {
     if (lesson && currentSentence < lesson.totalSentences) {
-      setCurrentSentence(prev => prev + 1);
+      setCurrentSentence((prev) => prev + 1);
       setUserInput("");
       setShowAnswer(false);
     }
@@ -120,25 +107,14 @@ const Lesson = () => {
 
   const handlePrevious = () => {
     if (currentSentence > 1) {
-      setCurrentSentence(prev => prev - 1);
+      setCurrentSentence((prev) => prev - 1);
       setUserInput("");
       setShowAnswer(false);
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  if (loading) {
-    return <div className="text-center py-10 text-muted-foreground">Đang tải bài học...</div>;
-  }
-
-  if (error || !lesson) {
-    return <div className="text-center py-10 text-red-500">Không tìm thấy bài học.</div>;
-  }
+  if (loading) return <div className="text-center py-10 text-muted-foreground">Đang tải bài học...</div>;
+  if (error || !lesson) return <div className="text-center py-10 text-red-500">Không tìm thấy bài học.</div>;
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,11 +122,7 @@ const Lesson = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/courses/${courseType}/${slug}`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/courses/${courseType}/${slug}`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Quay lại chủ đề
             </Button>
@@ -162,121 +134,110 @@ const Lesson = () => {
           </div>
         </div>
 
-
         {/* Progress */}
         <div className="flex items-center gap-4 mb-6">
           <span className="text-sm text-muted-foreground">0 phút</span>
           <Progress value={(currentSentence - 1) / lesson.totalSentences * 100} className="flex-1" />
         </div>
 
-        {/* Grid layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Video & Tabs */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Video + Tabs */}
+          <div className="lg:col-span-7">
             <Card>
-              <CardContent className="p-0">
-                {/* Video */}
-                <div className="relative bg-gray-900 rounded-t-lg overflow-hidden">
-                  <div className="relative bg-gray-900 rounded-t-lg overflow-hidden">
-                    <div
-                      ref={videoRef}
-                      className="w-full h-[400px] rounded-lg"
-                      id="youtube-player"
-                    />
-                  </div>
-
-                </div>
-
-                {/* Tabs content */}
-                <div className="p-4 space-y-4">
+              <CardContent className="p-4">
+                {/* Tabs + Settings */}
+                <div className="flex items-center justify-between px-4 pt-4">
                   <Tabs defaultValue="dictation">
                     <TabsList>
                       <TabsTrigger value="dictation">Dictation</TabsTrigger>
                       <TabsTrigger value="transcript">Transcript</TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="dictation" className="space-y-4">
-                      <div className="text-center flex items-center justify-center gap-4 mb-4">
-                        <Button variant="ghost" size="sm" onClick={handlePrevious} disabled={currentSentence === 1}>
-                          <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium">{currentSentence} / {lesson.totalSentences}</span>
-                        <Button variant="ghost" size="sm" onClick={handleSkip} disabled={currentSentence === lesson.totalSentences}>
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <Input
-                        placeholder="Type what you hear..."
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        className="text-center"
-                      />
-
-                      <div className="flex justify-center gap-4">
-                        <Button onClick={handleCheck} className="bg-blue-600 hover:bg-blue-700 text-white">
-                          Check
-                        </Button>
-                        <Button variant="outline" onClick={handleSkip}>
-                          Skip
-                        </Button>
-                      </div>
-
-                      {showAnswer && (
-                        <Card className="bg-green-50 border-green-200">
-                          <CardContent className="p-4">
-                            <p className="text-center text-green-800">
-                              <strong>Correct answer:</strong> {lesson.correctAnswer}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </TabsContent>
-
-                    <TabsContent value="transcript">
-                      <Card>
-                        <CardContent className="p-4">
-                          <p className="text-sm leading-relaxed whitespace-pre-line">
-                            {lesson.transcript}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
                   </Tabs>
+                  <div className="flex items-center gap-2">
+                    <select className="border rounded px-2 py-1 text-sm">
+                      <option>Video size: Normal</option>
+                      <option>Small</option>
+                      <option>Large</option>
+                    </select>
+                    <Button variant="outline" size="sm">Hide video</Button>
+                    <Button variant="outline" size="sm">Show comments</Button>
+                  </div>
                 </div>
+
+                {/* Video */}
+                <div className="px-4 pt-2">
+                  <div className="bg-gray-900 rounded-lg overflow-hidden">
+                    <div ref={videoRef} className="w-full h-[400px] rounded-lg" id="youtube-player" />
+                  </div>
+                </div>
+
+                {/* Tabs Content */}
+
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-4">Tiến độ của bạn</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Đã hoàn thành</span>
-                    <span>{currentSentence - 1}/{lesson.totalSentences}</span>
+          {/* Sidebar bên phải */}
+          <div className="lg:col-span-5">
+            {!hasStarted ? (
+              <Card>
+                <CardContent className="p-8 text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Play className="w-8 h-8 text-green-600" />
                   </div>
-                  <Progress value={(currentSentence - 1) / lesson.totalSentences * 100} />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Độ chính xác</span>
-                    <span>85%</span>
+                  <h3 className="text-xl font-semibold">Sẵn sàng luyện nghe?</h3>
+                  <p className="text-muted-foreground">
+                    Bài học này có {lesson.totalSentences} câu. Bạn sẽ nghe từng câu và gõ lại những gì bạn nghe được.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setHasStarted(true);
+                      startDictation();
+                    }}
+                    size="lg"
+                    className="bg-green-600 hover:bg-green-700 text-white px-8"
+                  >
+                    Bắt đầu luyện nghe
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <div className="text-center text-muted-foreground text-sm">
+                    Câu {currentCaptionIndex + 1} / {lesson.totalSentences}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <Input
+                    placeholder="Nhập những gì bạn nghe được"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    className="text-center text-base py-4"
+                  />
 
-            <Card>
-              <CardContent className="p-4 space-y-2">
-                <h3 className="font-semibold mb-4">Điều hướng</h3>
-                <Button variant="ghost" size="sm" className="w-full justify-start">Previous Lesson</Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start">Next Lesson</Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start">
-                  <RotateCcw className="h-4 w-4 mr-2" /> Restart Lesson
-                </Button>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={prevCaption} variant="ghost" size="sm">
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={handleCheck} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      Check
+                    </Button>
+                    <Button variant="outline" onClick={nextCaption}>
+                      Skip
+                    </Button>
+                    <Button onClick={nextCaption} variant="ghost" size="sm">
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {showAnswer && currentCaption?.captionText && (
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-3 text-green-800 text-center">
+                        <strong>Đáp án đúng:</strong> {currentCaption.captionText}
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
