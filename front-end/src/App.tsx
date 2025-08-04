@@ -29,11 +29,6 @@ const App = () => (
             <Route path="/courses/:courseType" element={<CourseTopic />} />
             <Route path="/courses/:courseType/:slug" element={<SectionList />} />
             <Route path="/courses/:courseType/:slug/:lessonSlugAndId" element={<LessonDetail />} />
-            
-
-
-
-
             {/* <Route path="/courses/:courseId/topics/:topicId" element={<LessonDetail />} /> */}
 
 
