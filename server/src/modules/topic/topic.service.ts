@@ -33,10 +33,10 @@ export class TopicService {
         });
     }
 
-    //Lấy TOPIC theo Slug
-    async getTopicBySlug(slug: string): Promise<Topic> {
+    //Lấy TOPIC và section theo Slug
+    async getTopicBySlugAndType(slug: string, type: string): Promise<Topic> {
         return this.topicRespository.findOne({
-            where: { slug },
+            where: { slug, type },
             relations: ['sections', 'sections.lessons'],
         });
     }
