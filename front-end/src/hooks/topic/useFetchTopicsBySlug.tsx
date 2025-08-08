@@ -30,17 +30,19 @@ interface Topic {
   sections: Section[];
 }
 
-export const useFetchTopicsBySlug = (slug?: string) => {
+export const useFetchTopicsBySlugAndType = (slug?: string, type?: string) => {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug || !type) return;
 
     const fetch = async () => {
       try {
-        const response = await requestApi.getRequest(`/topic/getBySlug/${slug}`);
-        setTopic(response.data); // ✅ Đúng kiểu object
+        const response = await requestApi.getRequest(
+          `/topic/getBySlugAndType/${slug}?type=${type}`
+        );
+        setTopic(response.data);
       } catch (error) {
         console.error("Error fetching topic:", error);
       } finally {
@@ -49,9 +51,9 @@ export const useFetchTopicsBySlug = (slug?: string) => {
     };
 
     fetch();
-  }, [slug]);
+  }, [slug, type]);
 
   return { topic, loading };
 };
 
-export default useFetchTopicsBySlug;
+export default useFetchTopicsBySlugAndType;

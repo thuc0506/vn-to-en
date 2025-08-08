@@ -1,12 +1,12 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BookOpen, Clock } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
-import { useFetchTopicsBySlug } from "../hooks/topic/useFetchTopicsBySlug"; // Adjust the import path as necessary
+import { useFetchTopicsBySlugAndType } from "../hooks/topic/useFetchTopicsBySlug"; // Adjust the import path as necessary
 
 const SectionList = () => { 
     const { slug } = useParams();
     const { courseType } = useParams();
-    const { topic, loading } = useFetchTopicsBySlug(slug || "");
+   const { topic, loading } = useFetchTopicsBySlugAndType(slug, courseType);
 
 
     if (loading) {

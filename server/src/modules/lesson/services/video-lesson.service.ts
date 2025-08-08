@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { exec } from 'child_process';
 import { Repository } from 'typeorm';
 import { VideoLesson } from '../entities/video-lesson.entity';
-import { CreateLessionDto } from '../dto/video-lesson.service';
+import { CreateLessionDto } from '../dto/video-lesson.dto';
 import  {Section} from '../../section/entities/section.entity';
 import { Lesson } from '../entities/lesson.entity';
 import slugify from 'slugify';
