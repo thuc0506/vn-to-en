@@ -28,6 +28,7 @@ export class AudioLessonService {
             type: 'audio',
             section: null // có thể null hoặc object
         });
+
         await this.lessonRepository.save(lesson);
 
         // Tạo audio lesson

@@ -4,6 +4,14 @@ export class CreateLessonTopicSection1753692501618 implements MigrationInterface
     name = 'CreateLessonTopicSection1753692501618'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        //👉 Tạo enum cho lesson.type
+        await queryRunner.query(`
+            CREATE TYPE "public"."lesson_type_enum" AS ENUM('video', 'audio', 'translate')
+        `);
+
+         await queryRunner.query(`
+            CREATE TYPE "public"."topic_type_enum" AS ENUM('video', 'audi0', 'translate')
+        `);
         await queryRunner.query(`CREATE TABLE "lesson" ("id" SERIAL NOT NULL, "title" character varying NOT NULL, "type" "public"."lesson_type_enum" NOT NULL, "slug" character varying NOT NULL, "topicId" integer, "sectionId" integer, CONSTRAINT "PK_0ef25918f0237e68696dee455bd" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "section" ("id" SERIAL NOT NULL, "title" character varying NOT NULL, "description" character varying NOT NULL, "slug" character varying NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "topicId" integer, CONSTRAINT "PK_3c41d2d699384cc5e8eac54777d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "topic" ("id" SERIAL NOT NULL, "description" text NOT NULL, "level" character varying NOT NULL, "type" "public"."topic_type_enum" NOT NULL, "slug" character varying NOT NULL, "totalLessons" integer NOT NULL DEFAULT '0', "title" character varying NOT NULL, CONSTRAINT "PK_33aa4ecb4e4f20aa0157ea7ef61" PRIMARY KEY ("id"))`);
