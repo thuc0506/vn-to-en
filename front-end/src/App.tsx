@@ -7,11 +7,12 @@ import Index from "./pages/Index";
 import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
 import CourseTopic from "./pages/CoursesTopic";
-import LessonDetail from "./pages/LessonDetail";
+import LessonRouter from "./pages/LessonRouter"; // Import LessonRouter thay vì LessonDetail
 import SectionList from "./pages/SectionList";
 import NotFound from "./pages/NotFound";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import MainLayout from "./components/layout/MainLayout";
+import Translate from "./pages/TranslateLesson";
 
 const queryClient = new QueryClient();
 
@@ -28,13 +29,11 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/courses/:courseType" element={<CourseTopic />} />
             <Route path="/courses/:courseType/:slug" element={<SectionList />} />
-            <Route path="/courses/:courseType/:slug/:lessonSlugAndId" element={<LessonDetail />} />
-            {/* <Route path="/courses/:courseId/topics/:topicId" element={<LessonDetail />} /> */}
-
-
+            {/* Sử dụng LessonRouter thay vì LessonDetail */}
+            <Route path="/courses/:courseType/:slug/:lessonSlugAndId" element={<LessonRouter />} />
           </Route>
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/translate" element={<Translate />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

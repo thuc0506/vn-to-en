@@ -101,7 +101,7 @@ export class VideoLessonService {
            const outputDir = path.resolve('tmp/transcripts');
 
 
-        const ffmpegPath = path.resolve('public/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe');
+        const ffmpegPath = path.resolve('public/ffmpeg-2025-09-01-git-3ea6c2fe25-essentials_build/bin/ffmpeg.exe');
 
 
 

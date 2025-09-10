@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from '../entities/lesson.entity';
 import { VideoLesson } from '../entities/video-lesson.entity';
+import { TranslateLesson } from '../entities/translate-lesson.entity';
 
 
 @Injectable()
@@ -18,8 +19,8 @@ export class LessonService {
     // @InjectRepository(AudioLesson)
     // private audioLessonRepo: Repository<AudioLesson>,
 
-    // @InjectRepository(TranslateLesson)
-    // private translateLessonRepo: Repository<TranslateLesson>,
+    @InjectRepository(TranslateLesson)
+    private translateLessonRepo: Repository<TranslateLesson>,
   ) {}
 
   async getLessonDetail(id: number) {
@@ -38,10 +39,10 @@ export class LessonService {
     //     const detail = await this.audioLessonRepo.findOne({ where: { lesson: { id } } });
     //     return { ...lesson, detail };
     //   }
-    //   case 'translate': {
-    //     const detail = await this.translateLessonRepo.findOne({ where: { lesson: { id } } });
-    //     return { ...lesson, detail };
-    //   }
+      case 'translate': {
+        const detail = await this.translateLessonRepo.findOne({ where: { lesson: { id } } });
+        return { ...lesson, detail };
+      }
       default:
         throw new NotFoundException('Loại bài học không hợp lệ');
     }

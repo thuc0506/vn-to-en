@@ -9,11 +9,16 @@ import { Lesson } from './entities/lesson.entity';
 import { AudioLesson } from './entities/audio.entity';
 import { AudioLessonService } from './services/audio-lesson.service';
 import { AudioLessonController } from './controller/audio-lesson.controller';
+import { TranslateLesson } from './entities/translate-lesson.entity';
+import { TranslateLessonService } from './services/translate-lesson.service';
+import { TranslateLessonController } from './controller/translate-lesson.controller';
+import { AiService } from '../ai/ai.service';
+
 
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VideoLesson, AudioLesson, Lesson])],
-  controllers: [LessonController, VideoLessonController, AudioLessonController],
-  providers: [LessonService, VideoLessonService, AudioLessonService],
+  imports: [TypeOrmModule.forFeature([VideoLesson, AudioLesson, Lesson, TranslateLesson, ])],
+  controllers: [LessonController, VideoLessonController, AudioLessonController, TranslateLessonController],
+  providers: [LessonService, VideoLessonService, AudioLessonService, TranslateLessonService, AiService],
 })
 export class LessonModule { }

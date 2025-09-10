@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne,  OneToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
 import { Section } from 'src/modules/section/entities/section.entity';
 import { Topic } from 'src/modules/topic/entities/topic.entity';
 
@@ -13,7 +13,7 @@ export class Lesson {
   @Column({ type: 'enum', enum: ['video', 'audio', 'translate'] })
   type: 'video' | 'audio' | 'translate';
 
-    @Column()
+  @Column()
   slug: string;
 
   @ManyToOne(() => Topic, topic => topic.lessons, { nullable: true })
