@@ -5,8 +5,7 @@ import { Repository } from 'typeorm';
 import { Lesson } from '../entities/lesson.entity';
 import { VideoLesson } from '../entities/video-lesson.entity';
 import { TranslateLesson } from '../entities/translate-lesson.entity';
-
-
+import { AudioLesson } from '../entities/audio.entity';
 @Injectable()
 export class LessonService {
   constructor(
@@ -16,8 +15,8 @@ export class LessonService {
     @InjectRepository(VideoLesson)
     private videoLessonRepo: Repository<VideoLesson>,
 
-    // @InjectRepository(AudioLesson)
-    // private audioLessonRepo: Repository<AudioLesson>,
+    @InjectRepository(AudioLesson)
+    private audioLessonRepo: Repository<AudioLesson>,
 
     @InjectRepository(TranslateLesson)
     private translateLessonRepo: Repository<TranslateLesson>,
@@ -35,10 +34,10 @@ export class LessonService {
         const detail = await this.videoLessonRepo.findOne({ where: { lesson: { id } } });
         return { ...lesson, detail };
       }
-    //   case 'audio': {
-    //     const detail = await this.audioLessonRepo.findOne({ where: { lesson: { id } } });
-    //     return { ...lesson, detail };
-    //   }
+      case 'audio': {
+        const detail = await this.audioLessonRepo.findOne({ where: { lesson: { id } } });
+        return { ...lesson, detail };
+      }
       case 'translate': {
         const detail = await this.translateLessonRepo.findOne({ where: { lesson: { id } } });
         return { ...lesson, detail };
@@ -47,4 +46,7 @@ export class LessonService {
         throw new NotFoundException('Loại bài học không hợp lệ');
     }
   }
+
+
+  
 }

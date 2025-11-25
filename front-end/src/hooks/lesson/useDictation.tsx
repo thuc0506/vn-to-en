@@ -21,7 +21,7 @@ const cleanCaption = (rawText: string) => {
         .trim();                                       // trim
 };
 
-const useDictationTrainer = (transcriptPath: string, playerRef: any) => {
+const useDictation= (transcriptPath: string, playerRef: any) => {
     const [transcript, setTranscript] = useState<any[]>([]);
     const [currentCaptionIndex, setCurrentCaptionIndex] = useState(0);
     const [currentCaption, setCurrentCaption] = useState<any>(null);
@@ -37,7 +37,7 @@ const useDictationTrainer = (transcriptPath: string, playerRef: any) => {
     useEffect(() => {
         const fetchAndParseVTT = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/transcripts/${transcriptPath}`);
+             const response = await fetch(`${import.meta.env.VITE_API_URL}${transcriptPath}`);
                 const vttText = await response.text();
 
                 const cuePattern =
@@ -130,6 +130,8 @@ const useDictationTrainer = (transcriptPath: string, playerRef: any) => {
         }
     };
 
+
+    // Kiểm tra đáp án
     const checkAnswer = () => {
         if (!currentCaption) return;
         const normInput = userInput.trim().toLowerCase().replace(/\s+/g, " ");
@@ -158,4 +160,4 @@ const useDictationTrainer = (transcriptPath: string, playerRef: any) => {
     };
 };
 
-export default useDictationTrainer;
+export default useDictation;

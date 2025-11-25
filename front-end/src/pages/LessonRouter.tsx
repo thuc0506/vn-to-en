@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import VideoLesson from "./VideoLesson";
 import LessonTranslate from "./TranslateLesson";
+import AudioLesson from "./AudioLesson";
 
 const LessonRouter = () => {
   const { courseType } = useParams();
@@ -11,8 +12,8 @@ const LessonRouter = () => {
       return <LessonTranslate />;
     case 'video':
       return <VideoLesson />;
-    // case 'audio':
-    //   return <LessonAudio />;
+    case 'audio':
+      return <AudioLesson />;
     // case 'toeic':
     //   return <LessonDetail />; // hoặc LessonToeic nếu bạn có component riêng
     // case 'one-on-one':

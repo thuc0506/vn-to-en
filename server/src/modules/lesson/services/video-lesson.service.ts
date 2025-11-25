@@ -98,7 +98,7 @@ export class VideoLessonService {
     //crawl transciprt video
     async getTranscriptFromVideo(videoUrl: string, videoTitle: string, videoId: number, lessonId: number): Promise<void> {
         return new Promise((resolve, reject) => {
-           const outputDir = path.resolve('tmp/transcripts');
+           const outputDir = path.resolve('uploads/transcripts/video');
 
 
         const ffmpegPath = path.resolve('public/ffmpeg-2025-09-01-git-3ea6c2fe25-essentials_build/bin/ffmpeg.exe');
@@ -152,7 +152,7 @@ export class VideoLessonService {
                 // Cập nhật tên file transcript trong bảng videos
                 const video = await this.videoLessonRepository.findOne({ where: { id: videoId } });
                 if (video) {
-                    video.transcript_path = transcriptFileName;
+                   video.transcript_path = `/uploads/transcripts/video/${transcriptFileName}`;
                     await this.videoLessonRepository.save(video);
                     console.log('Transcript file name saved successfully in videos table');
                     resolve();
